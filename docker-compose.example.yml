@@ -1,0 +1,17 @@
+
+services:
+  postgres_db:
+    image: postgres:16 # Uses the specific Postgres 16 image from Docker Hub
+    container_name: postgres_container
+    restart: always # Ensures the container restarts automatically if it fails
+    environment:
+      POSTGRES_USER: myuser # Sets the default user
+      POSTGRES_PASSWORD: mypassword # Sets the user's password
+      POSTGRES_DB: mydatabase # Sets the default database name
+    ports:
+      - "5432:5432" # Maps port 5432 on the host to port 5432 in the container
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persists the database data to a named volume
+
+volumes:
+  postgres_data:
