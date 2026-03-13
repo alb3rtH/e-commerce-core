@@ -1,0 +1,36 @@
+src/
+├── common/                     # Utilidades compartidas por toda la app
+│   ├── decorators/             # Decoradores personalizados (ej: @GetUser)
+│   ├── filters/                # Filtros de excepciones (manejo global de errores)
+│   ├── interceptors/           # Transformación de respuestas o logging
+│   └── middleware/             # Middlewares clásicos de Express/Fastify
+│
+├── config/                     # Configuración centralizada
+│   ├── database.config.ts      # Configuración de TypeORM
+│   └── env.validation.ts       # Validación de variables de entorno (con Joi o Zod)
+│
+├── modules/                    # Módulos de dominio (la carne del proyecto)
+│   ├── products/
+│   │   ├── domain/             # Entidades puras e interfaces de repositorios
+│   │   ├── application/        # Servicios (Casos de Uso) y DTOs
+│   │   ├── infrastructure/     # Controladores y Entidades de TypeORM
+│   │   └── products.module.ts
+│   │
+│   ├── orders/                 # Lógica de creación de pedidos y stock
+│   │   ├── domain/
+│   │   ├── application/
+│   │   ├── infrastructure/
+│   │   └── orders.module.ts
+│   │
+│   ├── payments/               # Integración con Stripe/PayPal
+│   │   ├── services/           # Lógica específica de la pasarela
+│   │   └── payments.module.ts
+│   │
+│   └── auth/                   # Gestión de JWT, Roles y Registro
+│
+├── database/                   # Todo lo relacionado con persistencia
+│   ├── migrations/             # Archivos de migración de TypeORM
+│   └── seeds/                  # Datos iniciales para pruebas
+│
+├── main.ts                     # Punto de entrada (Bootstrapping)
+└── app.module.ts               # Módulo raíz que orquesta todo
