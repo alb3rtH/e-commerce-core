@@ -17,6 +17,12 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'character varying', length: 40 })
+  name: string;
+
+  @Column({ type: 'character varying', length: 40 })
+  lastname: string;
+
   @Column({ unique: true })
   email: string;
 
