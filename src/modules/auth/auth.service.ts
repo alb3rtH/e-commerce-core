@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../user/domain/user.entity';
 import { Repository } from 'typeorm';
+import { compare } from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -10,11 +11,25 @@ export class AuthService {
     private authRepository: Repository<User>,
   ) {}
 
-  async findByEmail(email: string): Promise<string> {
-    if (!(await this.authRepository.existsBy({ email: email }))) {
-      throw new BadRequestException('email not found');
+  async findByEmail(email: string): Promise<boolean> {
+    return await this.authRepository.existsBy({ email: email });
+  }
+
+  async findPsswdByEmail(email: string): Promise<string> {
+    const user = await this.authRepository.findOne({
+      where: {
+        email: email,
+      },
+      select: ['password'],
+    });
+    if (!user?.password) {
+      return '';
     }
 
-    return `found by email: ${email}`;
+    return user.password;
+  }
+
+  async bcrypCompare(password: string, hash: string) {
+    return compare(password, hash);
   }
 }
