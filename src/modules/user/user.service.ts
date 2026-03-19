@@ -33,7 +33,6 @@ export class UserService {
         const driverError = error.driverError as { code?: string };
         throw new BadRequestException(driverError.code || 'Database Error');
       }
-      //TODO: Implement a good logger manager
       const log = new Logger();
       log.error(error);
       throw new InternalServerErrorException('Failed to create user');

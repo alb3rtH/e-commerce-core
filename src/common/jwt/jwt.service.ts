@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { importPKCS8, JWTPayload, SignJWT } from 'jose';
 
-// Claims estándar RFC 7519 (controlados por la librería, no por el usuario)
+// Standard RFC 7519 claims (controlled by the library, not the user)
 interface StandardClaims {
   iss?: string;
   sub?: string;
@@ -22,7 +22,7 @@ interface SignerConfig {
   algorithm?: Algorithm;
   secret?: Uint8Array | string;
   privateKey?: string;
-  // Claims standard configurados en constructor (no hay payload)
+  // Standard claims configured in constructor (no payload)
   issuer?: string;
   audience?: string | string[];
   expiresIn?: string | number; // '2h', '1d'
