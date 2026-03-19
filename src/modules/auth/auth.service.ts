@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../user/domain/user.entity';
 import { Repository } from 'typeorm';
@@ -11,23 +11,47 @@ export class AuthService {
     private authRepository: Repository<User>,
   ) {}
 
-  async findByEmail(email: string): Promise<boolean> {
-    return await this.authRepository.existsBy({ email: email });
-  }
+  async findUserByEmail(
+    email: string,
+    userPassword: string,
+  ): Promise<User | null> {
+    if (!(await this.authRepository.existsBy({ email: email }))) {
+      throw new BadRequestException('email not exist');
+    }
 
-  async findPsswdByEmail(email: string): Promise<string> {
-    const user = await this.authRepository.findOne({
+    const hashPassword = await this.authRepository.findOne({
       where: {
         email: email,
       },
       select: ['password'],
     });
-    if (!user?.password) {
-      return '';
+
+    if (!(await this.bcrypCompare(userPassword, hashPassword!.password))) {
+      throw new BadRequestException('incorrect password');
     }
 
-    return user.password;
+    const user = await this.authRepository.findOne({
+      where: {
+        email: email,
+      },
+      select: ['id', 'name', 'lastname', 'role'],
+    });
+
+    return user;
   }
+
+  //TODO: Refact or delete this method
+
+  // async findUserByEmail(email: string): Promise<User | null> {
+  //   const user = await this.authRepository.findOne({
+  //     where: {
+  //       email: email,
+  //     },
+  //     select: ['id', 'name', 'lastname', 'role'],
+  //   });
+  //
+  //   return user;
+  // }
 
   async bcrypCompare(password: string, hash: string) {
     return compare(password, hash);

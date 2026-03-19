@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   HttpCode,
@@ -9,23 +8,30 @@ import {
 } from '@nestjs/common';
 import { AuthDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
+import { JwtService } from 'src/common/jwt/jwt.service';
+import { JWTPayload } from 'jose';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly jwtService: JwtService<JWTPayload>,
+  ) {}
 
   @Post('signin')
   @HttpCode(HttpStatus.FOUND)
-  async login(@Body() authDto: AuthDto) {
-    if (!(await this.authService.findByEmail(authDto.email))) {
-      throw new BadRequestException('email is not found');
+  async signin(@Body() authDto: AuthDto) {
+    const user = await this.authService.findUserByEmail(
+      authDto.email,
+      authDto.password,
+    );
+    if (!user) {
+      throw new InternalServerErrorException();
     }
+    const token = await this.jwtService.signToken({ user: user });
 
-    const hash = await this.authService.findPsswdByEmail(authDto.email)
-    if (!hash) {
-      throw new InternalServerErrorException()
-    }
-
-    return (await this.authService.bcrypCompare(authDto.password, hash)) ? "welcome" : "password incorrect"
+    return {
+      token: token,
+    };
   }
 }

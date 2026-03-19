@@ -35,6 +35,9 @@ importers:
       class-validator:
         specifier: ^0.15.1
         version: 0.15.1
+      jose:
+        specifier: ^6.2.1
+        version: 6.2.1
       mysql2:
         specifier: ^3.19.1
         version: 3.19.1(@types/node@22.19.15)
@@ -2236,6 +2239,9 @@ packages:
     peerDependenciesMeta:
       node-notifier:
         optional: true
+
+  jose@6.2.1:
+    resolution: {integrity: sha512-jUaKr1yrbfaImV7R2TN/b3IcZzsw38/chqMpo2XJ7i2F8AfM/lA4G1goC3JVEwg0H7UldTmSt3P68nt31W7/mw==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -5831,6 +5837,8 @@ snapshots:
       - esbuild-register
       - supports-color
       - ts-node
+
+  jose@6.2.1: {}
 
   js-tokens@4.0.0: {}
 
