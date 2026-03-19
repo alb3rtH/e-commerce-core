@@ -27,7 +27,7 @@ export class UserService {
 
     try {
       await this.userRepository.save(user);
-      return 'Tooo bien mano';
+      return 'user created successfully';
     } catch (error: unknown) {
       if (error instanceof QueryFailedError) {
         const driverError = error.driverError as { code?: string };
