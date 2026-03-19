@@ -11,15 +11,56 @@ import { AuthService } from './auth.service';
 import { JwtService } from 'src/common/jwt/jwt.service';
 import { JWTPayload } from 'jose';
 
+/**
+ * Controller responsible for handling authentication-related HTTP requests.
+ * Provides endpoints for user sign-in operations and JWT token generation.
+ *
+ * @example
+ * // Usage in a NestJS module
+ * @Module({
+ *   controllers: [AuthController],
+ *   providers: [AuthService, JwtService],
+ * })
+ * export class AuthModule {}
+ */
 @Controller('auth')
 export class AuthController {
+  /**
+   * Creates an instance of AuthController.
+   *
+   * @param authService - Service handling authentication business logic and user retrieval
+   * @param jwtService - Service responsible for JWT token generation and validation
+   */
   constructor(
     private readonly authService: AuthService,
     private readonly jwtService: JwtService<JWTPayload>,
   ) {}
 
+  /**
+   * Authenticates a user and generates a JWT access token.
+   *
+   * @remarks
+   * This endpoint validates user credentials against the database. Upon successful
+   * authentication, a JWT token containing user information is returned.
+   *
+   * @param authDto - Data transfer object containing user credentials (email and password)
+   * @returns An object containing the signed JWT access token
+   * @throws {InternalServerErrorException} When user authentication fails or user is not found
+   *
+   * @example
+   * // Request body
+   * {
+   *   "email": "user@example.com",
+   *   "password": "securePassword123"
+   * }
+   *
+   * // Successful response (201 created)
+   * {
+   *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+   * }
+   */
   @Post('signin')
-  @HttpCode(HttpStatus.FOUND)
+  @HttpCode(HttpStatus.CREATED)
   async signin(@Body() authDto: AuthDto) {
     const user = await this.authService.findUserByEmail(
       authDto.email,
