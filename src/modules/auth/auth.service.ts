@@ -90,7 +90,7 @@ export class AuthService {
    *   console.log('Valid password');
    * }
    */
-  async bcrypCompare(password: string, hash: string) {
+  private async bcrypCompare(password: string, hash: string) {
     return compare(password, hash);
   }
 }

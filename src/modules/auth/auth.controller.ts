@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { AuthDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
-import { JwtService } from 'src/common/jwt/jwt.service';
+import { JwtService } from './jwt/jwt.service';
 import { JWTPayload } from 'jose';
 
 /**

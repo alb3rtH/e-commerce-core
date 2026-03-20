@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../user/domain/user.entity';
-import { JwtService } from 'src/common/jwt/jwt.service';
+import { JwtService } from './jwt/jwt.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User])],
