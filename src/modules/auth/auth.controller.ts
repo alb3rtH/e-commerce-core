@@ -1,15 +1,20 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   InternalServerErrorException,
   Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
 import { JwtService } from './jwt/jwt.service';
 import { JWTPayload } from 'jose';
+import { JwtAuthGuard } from './jwt/jwt.guard';
+import type { RequestWithUser } from './jwt/interfaces/jwt.interfaces';
 
 /**
  * Controller responsible for handling authentication-related HTTP requests.
@@ -74,5 +79,14 @@ export class AuthController {
     return {
       token: token,
     };
+  }
+  /**
+   * @remarks
+   * this controller authguard is just for debug validate tokens
+   * */
+  @UseGuards(JwtAuthGuard)
+  @Get('authguard')
+  authguard(@Request() req: RequestWithUser) {
+    return req.user;
   }
 }

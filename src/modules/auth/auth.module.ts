@@ -4,9 +4,15 @@ import { AuthController } from './auth.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../user/domain/user.entity';
 import { JwtService } from './jwt/jwt.service';
+import { PassportModule } from '@nestjs/passport';
+import { JwtAuthGuard } from './jwt/jwt.guard';
+import { JwtStrategy } from './jwt/jwt.strategy';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User])],
+  imports: [
+    TypeOrmModule.forFeature([User]),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+  ],
   providers: [
     AuthService,
     {
@@ -16,11 +22,13 @@ import { JwtService } from './jwt/jwt.service';
           // ← return explícito
           algorithm: 'HS256',
           secret: process.env.JWT_SECRET,
-          expiresIn: '1m',
+          expiresIn: '30m',
           issuer: 'e-commerce-core',
         });
       },
     },
+    JwtAuthGuard,
+    JwtStrategy,
   ],
   controllers: [AuthController],
 })
