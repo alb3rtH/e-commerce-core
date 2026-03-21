@@ -12,6 +12,7 @@ const PORT_APP = process.env.PORT || 3000;
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
+        forbidNonWhitelisted: true,
         transform: true,
       }),
     );
