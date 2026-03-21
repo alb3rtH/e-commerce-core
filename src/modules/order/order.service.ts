@@ -49,6 +49,7 @@ export class OrderService {
         user: { id: userID },
         status: OrderStatus.PENDING,
         totalAmount,
+        items: orderItems,
       });
 
       const savedOrder = await queryRunner.manager.save(order);
