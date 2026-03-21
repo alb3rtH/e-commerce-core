@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { Product } from '../product/domain/product.entity';
@@ -20,7 +15,7 @@ export class OrderService {
     await queryRunner.startTransaction();
 
     try {
-      const totalAmount: number = 0;
+      let totalAmount: number = 0;
       const orderItems: OrderItem[] = [];
 
       for (const item of createOrderDto.items) {
@@ -42,6 +37,7 @@ export class OrderService {
           priceAtPurchase: product.price,
         });
 
+        totalAmount += product.price * item.quantity;
         orderItems.push(orderItem);
       }
 
@@ -60,8 +56,6 @@ export class OrderService {
       await queryRunner.rollbackTransaction();
       const logger = new Logger('transaccion', { timestamp: true });
       logger.error(error);
-
-      throw new InternalServerErrorException();
     }
   }
 }
