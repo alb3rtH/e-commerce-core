@@ -1,12 +1,17 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { Product } from '../product/domain/product.entity';
 import { Order, OrderItem, OrderStatus } from './domain/order.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly datasource: DataSource) {}
+  constructor(
+    private readonly datasource: DataSource,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
+  ) {}
 
   async createOrder(userID: string, createOrderDto: CreateOrderDto) {
     const queryRunner = this.datasource.createQueryRunner();
@@ -57,5 +62,11 @@ export class OrderService {
       const logger = new Logger('transaccion', { timestamp: true });
       logger.error(error);
     }
+  }
+  async markAsPaid(orderId: string) {
+    const order = await this.orderRepository.findOneBy({ id: orderId });
+    if (!order) return;
+    order.status = OrderStatus.PAID;
+    await this.orderRepository.save(order);
   }
 }
