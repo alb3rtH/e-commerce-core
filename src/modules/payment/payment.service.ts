@@ -23,8 +23,8 @@ export class PaymentService {
         quantity: item.quantity,
       })),
       mode: 'payment',
-      success_url: 'http://localhost:3000/success',
-      cancel_url: 'http://localhost:3000/cancel',
+      success_url: 'http://localhost:8080/success',
+      cancel_url: 'http://localhost:8080/cancel',
       metadata: { orderId: order.id },
     });
     return { url: session.url };

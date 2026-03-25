@@ -1,4 +1,11 @@
-import { Body, Controller, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpStatus,
+  InternalServerErrorException,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -10,12 +17,16 @@ import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { GetUser } from 'src/common/decorators/get-user/get-user.decorator';
 import { User } from '../user/domain/user.entity';
+import { PaymentService } from '../payment/payment.service';
 
 @ApiTags()
 @ApiBearerAuth()
 @Controller('order')
 export class OrderController {
-  constructor(private readonly orderService: OrderService) {}
+  constructor(
+    private readonly orderService: OrderService,
+    private readonly paymentService: PaymentService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -33,8 +44,19 @@ export class OrderController {
     description: 'unauthorized',
   })
   async create(@Body() createOrderdto: CreateOrderDto, @GetUser() user: User) {
+    //1. create the order in the database (Status: PENDING)
     const order = await this.orderService.createOrder(user.id, createOrderdto);
-    return order;
+
+    //2. generate the Stripe session immediately
+    if (!order) {
+      throw new InternalServerErrorException('order not generate');
+    }
+
     //TODO: ok ahora que ya tengo creado la orden necesito hacer el module/payment
+    const session = await this.paymentService.createCheckoutSession(order);
+    return {
+      orderID: order.id,
+      checkoutUrl: session.url,
+    };
   }
 }

@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { CreateUserDto } from './dtos/user.dto';
 import { UserService } from './user.service';
 
@@ -18,10 +11,5 @@ export class UsersController {
   async create(@Body() createUserDto: CreateUserDto) {
     const message = await this.userService.save(createUserDto);
     return message;
-  }
-
-  @Get()
-  getSome(): string {
-    return 'Hello World';
   }
 }

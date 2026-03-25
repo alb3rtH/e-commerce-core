@@ -7,8 +7,10 @@ const PORT_APP = process.env.PORT || 3000;
 
 (() => {
   async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
-
+    const app = await NestFactory.create(AppModule, {
+      rawBody: true,
+    });
+    //TODO: Averiguar mas acerca de porque el webhook no funciona
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
