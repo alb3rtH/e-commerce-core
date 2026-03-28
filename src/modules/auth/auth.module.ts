@@ -22,7 +22,7 @@ import { JwtStrategy } from './jwt/jwt.strategy';
           // ← return explícito
           algorithm: 'HS256',
           secret: process.env.JWT_SECRET,
-          expiresIn: '30m',
+          expiresIn: '24h',
           issuer: 'e-commerce-core',
         });
       },

@@ -6,9 +6,11 @@ import { Stripe } from 'stripe';
 export class PaymentService {
   // En payments.service.ts
   private stripe: Stripe;
+  private stripeSecretKey: string;
 
   constructor() {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+    this.stripeSecretKey = process.env.STRIPE_SECRET_WEBHOOK || '';
   }
 
   async createCheckoutSession(order: Order) {
@@ -34,7 +36,7 @@ export class PaymentService {
     return this.stripe.webhooks.constructEvent(
       payload,
       signature,
-      process.env.STRIPE_SECRET_KEY || '',
+      this.stripeSecretKey,
     );
   }
 }

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Controller,
   Headers,
+  InternalServerErrorException,
   Post,
   RawBodyRequest,
   Req,
@@ -25,7 +26,7 @@ export class PaymentController {
     @Headers('stripe-signature') signature: string,
   ) {
     if (!signature)
-      throw new BadRequestException('Stripe signature is missing');
+      throw new InternalServerErrorException('Stripe signature is missing');
 
     let event: Stripe.Event;
 
@@ -37,10 +38,8 @@ export class PaymentController {
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      const orderID = session.metadata?.orderID;
-
-      console.log(`payment successfull ${orderID}`);
-      await this.orderService.markAsPaid(orderID || '');
+      const orderID = session.metadata?.orderId;
+      await this.orderService.markAsPaid(orderID!);
     }
 
     return { recieved: true };
