@@ -6,12 +6,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { OrderService } from './order.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { CreateOrderDto } from './dto/createOrder.dto';
@@ -20,7 +15,6 @@ import { User } from '../user/domain/user.entity';
 import { PaymentService } from '../payment/payment.service';
 
 @ApiTags('orders')
-@ApiBearerAuth()
 @Controller('order')
 export class OrderController {
   constructor(

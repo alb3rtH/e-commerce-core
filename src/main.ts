@@ -20,6 +20,17 @@ const PORT_APP = process.env.PORT || 3000;
     );
 
     const docConfig = new DocumentBuilder()
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'JWT',
+          description: 'Enter JWT token',
+          in: 'header',
+        },
+        'access-token', // Name for the security scheme (arbitrary)
+      )
       .setTitle('e-commerce-core')
       .setVersion('0.0.1')
       .build();
