@@ -10,6 +10,13 @@ import {
 import { PaymentService } from './payment.service';
 import { OrderService } from '../order/order.service';
 import { Stripe } from 'stripe';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiHeader,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 
 /**
  * Helper type for requests with raw body (unparsed).
@@ -48,6 +55,56 @@ export class PaymentController {
    * @throws {InternalServerErrorException} If the order id is missing
    */
   @Post('webhook')
+  @ApiOperation({ summary: 'enpoint to manage webhook from stripe' })
+  @ApiOperation({
+    summary: 'Endpoint to manage webhooks from Stripe',
+    description: `Receives webhook events from Stripe. 
+    Verifies the signature to ensure authenticity. 
+    Processes 'checkout.session.completed' events to mark orders as paid.`,
+  })
+  @ApiHeader({
+    name: 'stripe-signature',
+    description: 'Stripe webhook signature for verification',
+    required: true,
+    example:
+      't=1492774577,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8d',
+  })
+  @ApiConsumes('application/json')
+  @ApiBody({
+    description:
+      'Raw Stripe event payload (must be received as raw body, not parsed)',
+    schema: {
+      type: 'object',
+      example: {
+        id: 'evt_1234567890',
+        object: 'event',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_1234567890',
+            metadata: {
+              orderId: '550e8400-e29b-41d4-a716-446655440000',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Webhook received and processed successfully',
+    schema: {
+      example: { received: true },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid signature or malformed webhook payload',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Missing signature or internal server error',
+  })
   async handleWebhook(
     @Req() req: RequesrRaw,
     @Headers('stripe-signature') signature: string,
