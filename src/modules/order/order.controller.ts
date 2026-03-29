@@ -19,7 +19,7 @@ import { GetUser } from 'src/common/decorators/get-user/get-user.decorator';
 import { User } from '../user/domain/user.entity';
 import { PaymentService } from '../payment/payment.service';
 
-@ApiTags()
+@ApiTags('orders')
 @ApiBearerAuth()
 @Controller('order')
 export class OrderController {
@@ -43,6 +43,10 @@ export class OrderController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'unauthorized',
   })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'order not generate',
+  })
   async create(@Body() createOrderdto: CreateOrderDto, @GetUser() user: User) {
     //1. create the order in the database (Status: PENDING)
     const order = await this.orderService.createOrder(user.id, createOrderdto);
@@ -52,7 +56,6 @@ export class OrderController {
       throw new InternalServerErrorException('order not generate');
     }
 
-    //TODO: ok ahora que ya tengo creado la orden necesito hacer el module/payment
     const session = await this.paymentService.createCheckoutSession(order);
     return {
       orderID: order.id,
