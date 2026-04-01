@@ -109,8 +109,9 @@ export class PaymentController {
     @Req() req: RequesrRaw,
     @Headers('stripe-signature') signature: string,
   ) {
-    if (!signature)
+    if (!signature) {
       throw new InternalServerErrorException('Stripe signature is missing');
+    }
 
     let event: Stripe.Event;
 
@@ -125,7 +126,7 @@ export class PaymentController {
       const orderID = session.metadata?.orderId;
 
       if (orderID) {
-        await this.orderService.markAsPaid(orderID);
+        await this.orderService.markAsPaidUpdateStock(orderID);
       } else new InternalServerErrorException(`Error order id: ${orderID}`);
     }
 

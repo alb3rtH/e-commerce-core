@@ -113,7 +113,7 @@ export class OrderService {
    * await orderService.markAsPaid('order-789');
    * ```
    */
-  async markAsPaid(orderId: string) {
+  async markAsPaidUpdateStock(orderId: string) {
     const order = await this.orderRepository.findOne({
       where: { id: orderId },
       relations: ['items', 'items.product'],
