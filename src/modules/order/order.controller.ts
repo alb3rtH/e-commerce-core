@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  HttpException,
   HttpStatus,
   InternalServerErrorException,
   Post,
@@ -13,6 +14,7 @@ import { CreateOrderDto } from './dto/createOrder.dto';
 import { GetUser } from 'src/common/decorators/get-user/get-user.decorator';
 import { User } from '../user/domain/user.entity';
 import { PaymentService } from '../payment/payment.service';
+//import { Order } from './domain/order.entity';
 
 @ApiTags('orders')
 @Controller('order')
@@ -43,17 +45,25 @@ export class OrderController {
   })
   async create(@Body() createOrderdto: CreateOrderDto, @GetUser() user: User) {
     //1. create the order in the database (Status: PENDING)
-    const order = await this.orderService.createOrder(user.id, createOrderdto);
+    try {
+      //2. generate the Stripe session immediately
+      const order = await this.orderService.createOrder(
+        user.id,
+        createOrderdto,
+      );
 
-    //2. generate the Stripe session immediately
-    if (!order) {
-      throw new InternalServerErrorException('order not generate');
+      if (order) {
+        const session = await this.paymentService.createCheckoutSession(order);
+        return {
+          orderID: order.id,
+          checkoutUrl: session.url,
+        };
+      }
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to create order');
     }
-
-    const session = await this.paymentService.createCheckoutSession(order);
-    return {
-      orderID: order.id,
-      checkoutUrl: session.url,
-    };
   }
 }

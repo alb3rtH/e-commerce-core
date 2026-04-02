@@ -1,7 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
   Injectable,
-  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -45,7 +45,10 @@ export class OrderService {
    * });
    * ```
    */
-  async createOrder(userID: string, createOrderDto: CreateOrderDto) {
+  async createOrder(
+    userID: string,
+    createOrderDto: CreateOrderDto,
+  ): Promise<Order | undefined> {
     const queryRunner = this.datasource.createQueryRunner();
 
     await queryRunner.connect();
@@ -91,11 +94,13 @@ export class OrderService {
       await queryRunner.commitTransaction();
 
       return savedOrder;
-    } catch (error) {
+    } catch (error: unknown) {
       await queryRunner.rollbackTransaction();
       const logger = new Logger(OrderService.name, { timestamp: true });
-      logger.error(error?.message ?? error, error);
-      throw new InternalServerErrorException('Could not create order');
+      if (error instanceof HttpException) {
+        logger.error(error.message ?? error, error);
+        throw error;
+      }
     } finally {
       await queryRunner.release();
     }
@@ -172,11 +177,13 @@ export class OrderService {
       await queryRunner.commitTransaction();
 
       return updatedOrder;
-    } catch (error) {
+    } catch (error: unknown) {
       await queryRunner.rollbackTransaction();
       const logger = new Logger(OrderService.name, { timestamp: true });
-      logger.error(error?.message ?? error, error);
-      throw error;
+      if (error instanceof HttpException) {
+        logger.error(error?.message ?? error, error);
+        throw error;
+      }
     } finally {
       await queryRunner.release();
     }
