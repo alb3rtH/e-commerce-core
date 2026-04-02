@@ -60,6 +60,7 @@ export class OrderService {
           Product,
           {
             where: { id: item.productID },
+            lock: { mode: 'pessimistic_write' },
           },
         );
 
