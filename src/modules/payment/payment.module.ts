@@ -6,8 +6,8 @@ import { OrdersModule } from '../order/order.module';
 
 @Module({
   imports: [forwardRef(() => OrdersModule)],
-  providers: [PaymentService, OrderService],
+  providers: [PaymentService],
   controllers: [PaymentController],
   exports: [PaymentService],
 })
-export class PaymentModule {}
+export class PaymentModule { }

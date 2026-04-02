@@ -2,7 +2,9 @@ import {
   BadRequestException,
   Controller,
   Headers,
+  HttpCode,
   InternalServerErrorException,
+  Logger,
   Post,
   RawBodyRequest,
   Req,
@@ -30,6 +32,8 @@ type RequesrRaw = RawBodyRequest<Request>;
  */
 @Controller('payment')
 export class PaymentController {
+  private readonly logger = new Logger(PaymentController.name);
+
   /**
    * @param paymentsService - Service for Stripe-related operations
    * @param orderService - Service for managing order lifecycle
@@ -105,12 +109,14 @@ export class PaymentController {
     status: 500,
     description: 'Missing signature or internal server error',
   })
+  @HttpCode(200)
   async handleWebhook(
     @Req() req: RequesrRaw,
     @Headers('stripe-signature') signature: string,
   ) {
     if (!signature) {
-      throw new InternalServerErrorException('Stripe signature is missing');
+      this.logger.error('Missing Stripe signature header');
+      throw new BadRequestException('Stripe signature is required');
     }
 
     let event: Stripe.Event;
@@ -118,18 +124,36 @@ export class PaymentController {
     try {
       event = this.paymentsService.constructEvent(req.rawBody!, signature);
     } catch (error) {
-      throw new BadRequestException(`webhook Error ${error}`);
+      this.logger.error('Stripe webhook verification failed', error);
+      throw new BadRequestException('Invalid Stripe webhook signature');
     }
 
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object;
-      const orderID = session.metadata?.orderId;
-
-      if (orderID) {
-        await this.orderService.markAsPaidUpdateStock(orderID);
-      } else new InternalServerErrorException(`Error order id: ${orderID}`);
+    if (event.type !== 'checkout.session.completed') {
+      this.logger.log(`Ignored Stripe event ${event.type}`);
+      return { received: true, ignored: true };
     }
 
-    return { recieved: true };
+    const session = event.data.object;
+    const orderId = session.metadata?.orderId;
+
+    if (!orderId) {
+      this.logger.error('Missing orderId in Stripe session metadata');
+      throw new BadRequestException('orderId is required in session metadata');
+    }
+
+    try {
+      await this.orderService.markAsPaidUpdateStock(orderId);
+      this.logger.log(`Order marked as paid: ${orderId}`);
+    } catch (error) {
+      this.logger.error(
+        `Error processing order ${orderId} from Stripe webhook`,
+        error,
+      );
+      throw new InternalServerErrorException(
+        'Unable to process webhook at this time',
+      );
+    }
+
+    return { received: true };
   }
 }

@@ -1,9 +1,14 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { Product } from '../product/domain/product.entity';
 import { Order, OrderItem, OrderStatus } from './domain/order.entity';
-import { InjectRepository } from '@nestjs/typeorm';
 
 /**
  * Service responsible for managing purchase orders.
@@ -17,11 +22,7 @@ export class OrderService {
    * @param datasource - TypeORM data source for transaction management
    * @param orderRepository - TypeORM repository for order CRUD operations
    */
-  constructor(
-    private readonly datasource: DataSource,
-    @InjectRepository(Order)
-    private orderRepository: Repository<Order>,
-  ) {}
+  constructor(private readonly datasource: DataSource) {}
 
   /**
    * Creates a new purchase order for a user.
@@ -91,8 +92,11 @@ export class OrderService {
       return savedOrder;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      const logger = new Logger('transaccion', { timestamp: true });
-      logger.error(error);
+      const logger = new Logger(OrderService.name, { timestamp: true });
+      logger.error(error?.message ?? error, error);
+      throw new InternalServerErrorException('Could not create order');
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -114,22 +118,66 @@ export class OrderService {
    * ```
    */
   async markAsPaidUpdateStock(orderId: string) {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-      relations: ['items', 'items.product'],
-    });
+    const queryRunner = this.datasource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (!order) return;
+    try {
+      const order = await queryRunner.manager.findOne(Order, {
+        where: { id: orderId },
+        relations: ['items', 'items.product'],
+      });
 
-    for (const item of order.items) {
-      await this.datasource
-        .createQueryBuilder()
-        .update(Product)
-        .set({ stock: () => `stock - ${item.quantity}` })
-        .where('id = :id', { id: item.product.id })
-        .execute();
+      if (!order) {
+        throw new NotFoundException(`Order not found with id: ${orderId}`);
+      }
+
+      if (order.status === OrderStatus.PAID) {
+        return order;
+      }
+
+      if (order.status !== OrderStatus.PENDING) {
+        throw new BadRequestException(
+          `Order with id ${orderId} cannot be processed from status ${order.status}`,
+        );
+      }
+
+      for (const item of order.items) {
+        if (!item.product) {
+          throw new BadRequestException(
+            `Missing product in one of the order items for order ${orderId}`,
+          );
+        }
+
+        if (item.product.stock < item.quantity) {
+          throw new BadRequestException(
+            `Insufficient stock for product ${item.product.name} (${item.product.id})`,
+          );
+        }
+
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(Product)
+          .set({ stock: () => `stock - ${item.quantity}` })
+          .where('id = :id AND stock >= :quantity', {
+            id: item.product.id,
+            quantity: item.quantity,
+          })
+          .execute();
+      }
+
+      order.status = OrderStatus.PAID;
+      const updatedOrder = await queryRunner.manager.save(order);
+      await queryRunner.commitTransaction();
+
+      return updatedOrder;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      const logger = new Logger(OrderService.name, { timestamp: true });
+      logger.error(error?.message ?? error, error);
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-    order.status = OrderStatus.PAID;
-    await this.orderRepository.save(order);
   }
 }

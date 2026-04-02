@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { Order } from '../order/domain/order.entity';
 import { Stripe } from 'stripe';
 
@@ -8,18 +13,40 @@ import { Stripe } from 'stripe';
  */
 @Injectable()
 export class PaymentService {
+  private readonly logger = new Logger(PaymentService.name);
   /** Stripe SDK instance for API interactions */
   private stripe: Stripe;
   /** Secret key for verifying Stripe webhook signatures */
   private stripeSecretKey: string;
+  /** Success URL for checkout session */
+  private successUrl: string;
+  /** Cancel URL for checkout session */
+  private cancelUrl: string;
 
   /**
    * Initializes the Stripe SDK with environment configuration.
-   * @throws {Error} If STRIPE_SECRET_KEY environment variable is not set
+   * @throws {Error} If required Stripe environment variables are not set
    */
   constructor() {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
-    this.stripeSecretKey = process.env.STRIPE_SECRET_WEBHOOK || '';
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const stripeWebhook = process.env.STRIPE_SECRET_WEBHOOK;
+    this.successUrl =
+      process.env.STRIPE_SUCCESS_URL || 'http://localhost:8080/success';
+    this.cancelUrl =
+      process.env.STRIPE_CANCEL_URL || 'http://localhost:8080/cancel';
+
+    if (!stripeKey) {
+      this.logger.error('STRIPE_SECRET_KEY is missing');
+      throw new Error('STRIPE_SECRET_KEY environment variable is required');
+    }
+
+    if (!stripeWebhook) {
+      this.logger.error('STRIPE_SECRET_WEBHOOK is missing');
+      throw new Error('STRIPE_SECRET_WEBHOOK environment variable is required');
+    }
+
+    this.stripe = new Stripe(stripeKey, { apiVersion: '2026-02-25.clover' });
+    this.stripeSecretKey = stripeWebhook;
   }
 
   /**
@@ -35,22 +62,65 @@ export class PaymentService {
    * @throws {Stripe.errors.StripeError} If session creation fails
    */
   async createCheckoutSession(order: Order) {
-    const session = await this.stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: order.items.map((item) => ({
+    if (!order) {
+      throw new BadRequestException(
+        'Order is required to generate Checkout Session',
+      );
+    }
+
+    if (!order.id) {
+      throw new BadRequestException('Order ID is required in order metadata');
+    }
+
+    if (!Array.isArray(order.items) || order.items.length === 0) {
+      throw new BadRequestException('Order must include at least one item');
+    }
+
+    const lineItems = order.items.map((item) => {
+      if (!item.product?.name) {
+        throw new BadRequestException('Order item must include a product name');
+      }
+
+      if (item.priceAtPurchase <= 0 || item.quantity <= 0) {
+        throw new BadRequestException(
+          'Order item price and quantity must be greater than 0',
+        );
+      }
+
+      return {
         price_data: {
-          currency: 'usd',
+          currency: process.env.STRIPE_CURRENCY || 'usd',
           product_data: { name: item.product.name },
           unit_amount: item.priceAtPurchase,
         },
         quantity: item.quantity,
-      })),
-      mode: 'payment',
-      success_url: 'http://localhost:8080/success',
-      cancel_url: 'http://localhost:8080/cancel',
-      metadata: { orderId: order.id },
+      };
     });
-    return { url: session.url };
+
+    try {
+      const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: lineItems,
+        mode: 'payment',
+        success_url: this.successUrl,
+        cancel_url: this.cancelUrl,
+        metadata: { orderId: order.id },
+      });
+
+      if (!session.url) {
+        this.logger.error('Stripe session created without URL');
+        throw new InternalServerErrorException(
+          'Stripe failed to create checkout session',
+        );
+      }
+
+      return { url: session.url };
+    } catch (error) {
+      this.logger.error('Stripe checkout session creation failed', error);
+      throw new InternalServerErrorException(
+        'Unable to create Stripe checkout session',
+      );
+    }
   }
 
   /**
@@ -66,10 +136,20 @@ export class PaymentService {
    * @throws {Stripe.errors.StripeSignatureVerificationError} If signature is invalid
    */
   constructEvent(payload: Buffer, signature: string) {
-    return this.stripe.webhooks.constructEvent(
-      payload,
-      signature,
-      this.stripeSecretKey,
-    );
+    if (!payload || !signature) {
+      this.logger.error('Webhook payload/signature missing');
+      throw new BadRequestException('Webhook payload or signature is missing');
+    }
+
+    try {
+      return this.stripe.webhooks.constructEvent(
+        payload,
+        signature,
+        this.stripeSecretKey,
+      );
+    } catch (error) {
+      this.logger.error('Stripe webhook signature verification failed', error);
+      throw error;
+    }
   }
 }
