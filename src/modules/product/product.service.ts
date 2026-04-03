@@ -31,7 +31,8 @@ export class ProductService {
         if (driverError.code == '23505') {
           throw new BadRequestException('sku duplicated');
         }
-        throw new BadRequestException(driverError.code || 'Database Error');
+        const message = `database error code: ${driverError.code}`;
+        throw new BadRequestException(message || 'Database Error');
       }
       const log = new Logger();
       log.error(error);
