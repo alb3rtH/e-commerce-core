@@ -40,6 +40,10 @@ export class ProductService {
     }
   }
 
+  async getAllProduct() {
+    return this.productRepository.find();
+  }
+
   private async findProductByName(name: string): Promise<Product | null> {
     return this.productRepository.findOneBy({ name: name });
   }
