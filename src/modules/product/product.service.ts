@@ -12,27 +12,33 @@ import { UpdateProductDto } from './dto/update.dto';
 
 @Injectable()
 export class ProductService {
+  private logger: Logger;
+
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-  ) {}
+  ) {
+    this.logger = new Logger(ProductService.name);
+  }
 
-  async saveProduct(createProductdto: CreateProductDto) {
+  async createProduct(createProductdto: CreateProductDto) {
     if (await this.findProductByName(createProductdto.name)) {
       throw new BadRequestException('Product is already exist');
     }
     const product = this.productRepository.create(createProductdto);
 
     try {
-      await this.productRepository.save(product);
-      return 'product created successfully';
+      return await this.productRepository.save(product);
     } catch (error: unknown) {
       if (error instanceof QueryFailedError) {
+        const logger = new Logger(error.name);
         const driverError = error.driverError as { code?: string };
         if (driverError.code == '23505') {
+          logger.error('sku diplicated');
           throw new BadRequestException('sku duplicated');
         }
         const message = `database error code: ${driverError.code}`;
+        logger.error(message);
         throw new BadRequestException(message || 'Database Error');
       }
       const log = new Logger();
@@ -41,7 +47,7 @@ export class ProductService {
     }
   }
 
-  async getAllProduct(): Promise<Product[] | undefined> {
+  async findAllProduct(): Promise<Product[]> {
     try {
       return this.productRepository.find();
     } catch (error: unknown) {
@@ -50,10 +56,12 @@ export class ProductService {
         const message = `database error code: ${driverError.code}`;
         throw new BadRequestException(message || 'database error');
       }
+      this.logger.error(error);
+      throw new InternalServerErrorException('Failed to fetch products');
     }
   }
 
-  async getAProduct(productID: string): Promise<Product | undefined | null> {
+  async findOneProduct(productID: string): Promise<Product | null> {
     try {
       return await this.productRepository.findOne({ where: { id: productID } });
     } catch (error: unknown) {
@@ -62,11 +70,14 @@ export class ProductService {
         const message = `database error code: ${driverError.code}`;
         throw new BadRequestException(message || 'database error');
       }
+
+      this.logger.error(error);
+      throw new InternalServerErrorException('Failed to retrieve product');
     }
   }
 
   async updateProduct(productID: string, updateProductDto: UpdateProductDto) {
-    const product = await this.getAProduct(productID);
+    const product = await this.findOneProduct(productID);
     if (!product) {
       throw new BadRequestException('Product not found');
     }
@@ -85,42 +96,33 @@ export class ProductService {
     this.productRepository.merge(product, updateProductDto);
 
     try {
-      await this.productRepository.save(product);
-      return 'Product updated successfully';
+      return await this.productRepository.save(product);
     } catch (error: unknown) {
       if (error instanceof QueryFailedError) {
         const driverError = error.driverError as { code?: string };
         if (driverError.code == '23505') {
-          throw new BadRequestException('SKU duplicated');
+          this.logger.error('sku duplicated');
+          throw new BadRequestException('sku duplicated');
         }
         const message = `database error code: ${driverError.code}`;
+        this.logger.error(message);
         throw new BadRequestException(message || 'Database Error');
       }
-      const log = new Logger();
-      log.error(error);
+      this.logger.error(error);
       throw new InternalServerErrorException('Failed to update product');
     }
   }
 
-  async deleteProduct(productID: string) {
-    const product = await this.getAProduct(productID);
-    if (!product) {
+  //NOTE: Add logic to perform a soft delete
+  async removeProduct(productID: string) {
+    const result = await this.productRepository.delete(productID);
+    if (result.affected === 0) {
       throw new BadRequestException('Product not found');
     }
 
-    try {
-      await this.productRepository.remove(product);
-      return 'Product deleted successfully';
-    } catch (error: unknown) {
-      if (error instanceof QueryFailedError) {
-        const driverError = error.driverError as { code?: string };
-        const message = `database error code: ${driverError.code}`;
-        throw new BadRequestException(message || 'Database Error');
-      }
-      const log = new Logger();
-      log.error(error);
-      throw new InternalServerErrorException('Failed to delete product');
-    }
+    return {
+      delete: true,
+    };
   }
 
   private async findProductByName(name: string): Promise<Product | null> {

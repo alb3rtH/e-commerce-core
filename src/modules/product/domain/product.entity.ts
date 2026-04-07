@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   UpdateDateColumn,
+  CreateDateColumn,
 } from 'typeorm';
 
 @Entity('products')
@@ -24,6 +25,9 @@ export class Product {
 
   @Column({ type: 'int', default: 0 })
   stock: number;
+
+  @CreateDateColumn()
+  createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;

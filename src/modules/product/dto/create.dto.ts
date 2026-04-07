@@ -14,7 +14,7 @@ export class CreateProductDto {
   @IsNotEmpty()
   @IsString()
   @MinLength(2)
-  @MaxLength(12)
+  @MaxLength(30)
   name: string;
 
   @ApiProperty({ type: 'string' })

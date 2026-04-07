@@ -25,23 +25,23 @@ export class ProductController {
 
   @Post()
   @Roles(UserRole.ADMIN)
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   async save(@Body() createProductdto: CreateProductDto) {
-    return await this.productService.saveProduct(createProductdto);
+    return await this.productService.createProduct(createProductdto);
   }
 
   @Get()
   @Roles(UserRole.ADMIN)
-  @HttpCode(HttpStatus.FOUND)
+  @HttpCode(HttpStatus.OK)
   async getAll() {
-    return this.productService.getAllProduct() ?? 'No products listed';
+    return this.productService.findAllProduct();
   }
 
   @Get(':id')
   @Roles(UserRole.ADMIN)
-  @HttpCode(HttpStatus.FOUND)
+  @HttpCode(HttpStatus.OK)
   async getOne(@Param('id') id: string) {
-    return this.productService.getAProduct(id);
+    return this.productService.findOneProduct(id);
   }
 
   @Put(':id')
@@ -58,6 +58,6 @@ export class ProductController {
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   async delete(@Param('id') id: string) {
-    return this.productService.deleteProduct(id);
+    return this.productService.removeProduct(id);
   }
 }
