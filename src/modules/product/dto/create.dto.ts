@@ -28,7 +28,7 @@ export class CreateProductDto {
   @IsNotEmpty()
   @IsString()
   @MinLength(2)
-  @MaxLength(12)
+  @MaxLength(40)
   description: string;
 
   @ApiProperty({ type: 'number' })
@@ -37,6 +37,7 @@ export class CreateProductDto {
   @Min(0)
   price: number;
 
+  @ApiProperty({ required: false })
   @IsInt() // the value is cent 100 = 1$
   @IsOptional()
   @Min(0)
