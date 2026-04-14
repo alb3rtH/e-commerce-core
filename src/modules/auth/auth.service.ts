@@ -1,8 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../user/domain/user.entity';
-import { Repository } from 'typeorm';
-import { compare } from 'bcrypt';
+import { QueryFailedError, Repository } from 'typeorm';
+import { compare, hash } from 'bcrypt';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 /**
  * Authentication service for managing user credential validation operations.
@@ -13,6 +19,7 @@ import { compare } from 'bcrypt';
  */
 @Injectable()
 export class AuthService {
+  private logger: Logger;
   constructor(
     /**
      * TypeORM repository for database operations with the User entity.
@@ -21,7 +28,9 @@ export class AuthService {
      */
     @InjectRepository(User)
     private authRepository: Repository<User>,
-  ) {}
+  ) {
+    this.logger = new Logger(AuthService.name);
+  }
 
   /**
    * Finds a user by their email address and validates the provided password.
@@ -92,5 +101,63 @@ export class AuthService {
    */
   private async bcrypCompare(password: string, hash: string) {
     return compare(password, hash);
+  }
+
+  //FIX: ¿Por qué no se incluye el updatedAt cuando cambio el password?
+  async updatePassword(
+    userId: string,
+    updatePasswordDto: UpdatePasswordDto,
+  ): Promise<Omit<User, 'password'> | undefined> {
+    const user = await this.authRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'password'], // Include password for verification
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const isPasswordValid = await compare(
+      updatePasswordDto.currentPassword,
+      user.password,
+    );
+    if (!isPasswordValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    const hashedNewPassword = await hash(updatePasswordDto.newPassword, 10);
+
+    try {
+      await this.authRepository.update(userId, { password: hashedNewPassword });
+      // Return user without password
+      const updatedUser = await this.findOneUser(userId);
+      if (updatedUser) {
+        return updatedUser;
+      }
+    } catch (error: unknown) {
+      if (error instanceof QueryFailedError) {
+        const driverError = error.driverError as { code?: string };
+        throw new BadRequestException(driverError.code || 'Database Error');
+      }
+      this.logger.error(error);
+      throw new InternalServerErrorException('Failed to update password');
+    }
+  }
+
+  private async findOneUser(userId: string) {
+    try {
+      return await this.authRepository.findOne({
+        where: { id: userId },
+      });
+    } catch (error: unknown) {
+      if (error instanceof QueryFailedError) {
+        const driverError = error.driverError as { code?: string };
+        this.logger.error(error);
+        throw new BadRequestException(driverError.code || 'Database Error');
+      }
+
+      this.logger.error(error);
+      throw new InternalServerErrorException('Failed to find user');
+    }
   }
 }

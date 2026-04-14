@@ -4,12 +4,17 @@ import {
   HttpCode,
   HttpStatus,
   InternalServerErrorException,
+  Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
 import { JwtService } from './jwt/jwt.service';
 import { JWTPayload } from 'jose';
+import { GetUser } from 'src/common/decorators/get-user/get-user.decorator';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { JwtAuthGuard } from './jwt/jwt.guard';
 
 /**
  * Controller responsible for handling authentication-related HTTP requests.
@@ -74,5 +79,15 @@ export class AuthController {
     return {
       token: token,
     };
+  }
+
+  //TODO: ¿Por qué no se incluye el updatedAt cuando cambió el password?
+  @Patch('update-password')
+  @UseGuards(JwtAuthGuard)
+  async updatePassword(
+    @GetUser('id') userId: string,
+    @Body() updatedPasswordDto: UpdatePasswordDto,
+  ) {
+    return await this.authService.updatePassword(userId, updatedPasswordDto);
   }
 }
