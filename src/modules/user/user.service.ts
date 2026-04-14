@@ -12,12 +12,18 @@ import { hash } from 'bcrypt';
 
 @Injectable()
 export class UserService {
+  private logger: Logger;
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) {}
+  ) {
+    this.logger = new Logger(UserService.name);
+  }
 
-  async save(createUserDto: CreateUserDto): Promise<string> {
+  async saveOneUser(
+    createUserDto: CreateUserDto,
+  ): Promise<Omit<User, 'password'>> {
     if (await this.findByEmail(createUserDto.email)) {
       throw new BadRequestException('Email is already exist');
     }
@@ -26,16 +32,48 @@ export class UserService {
     const user = this.userRepository.create(createUserDto);
 
     try {
-      await this.userRepository.save(user);
-      return 'user created successfully';
+      const savedUser = await this.userRepository.save(user);
+      const { password, ...userWithoutPassword } = savedUser;
+      return userWithoutPassword;
     } catch (error: unknown) {
       if (error instanceof QueryFailedError) {
         const driverError = error.driverError as { code?: string };
         throw new BadRequestException(driverError.code || 'Database Error');
       }
-      const log = new Logger();
-      log.error(error);
+      this.logger.error(error);
       throw new InternalServerErrorException('Failed to create user');
+    }
+  }
+
+  async findOneUser(userId: string) {
+    try {
+      return await this.userRepository.findOne({
+        where: { id: userId },
+      });
+    } catch (error: unknown) {
+      if (error instanceof QueryFailedError) {
+        const driverError = error.driverError as { code?: string };
+        this.logger.error(error);
+        throw new BadRequestException(driverError.code || 'Database Error');
+      }
+
+      this.logger.error(error);
+      throw new InternalServerErrorException('Failed to find user');
+    }
+  }
+
+  async findAllUsers() {
+    try {
+      return this.userRepository.find();
+    } catch (error: unknown) {
+      if (error instanceof QueryFailedError) {
+        const driverError = error.driverError as { code?: string };
+        this.logger.error(error);
+        throw new BadRequestException(driverError.code || 'Database Error');
+      }
+
+      this.logger.error(error);
+      throw new InternalServerErrorException('Failed to find user');
     }
   }
 
