@@ -120,7 +120,7 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new BadRequestException('User Not Found');
+      throw new BadRequestException('Product Not Found');
     }
 
     const result: UpdateResult = await this.productRepository.softDelete({
