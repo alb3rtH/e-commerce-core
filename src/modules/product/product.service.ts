@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { QueryFailedError, Repository } from 'typeorm';
+import { QueryFailedError, Repository, UpdateResult } from 'typeorm';
 import { Product } from './domain/product.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateProductDto } from './dto/create.dto';
@@ -114,15 +114,24 @@ export class ProductService {
   }
 
   //NOTE: Add logic to perform a soft delete
-  async removeProduct(productID: string) {
-    const result = await this.productRepository.delete(productID);
-    if (result.affected === 0) {
-      throw new BadRequestException('Product not found');
+  async deleteProduct(productID: string) {
+    const product = await this.productRepository.findOne({
+      where: { id: productID },
+    });
+
+    if (!product) {
+      throw new BadRequestException('User Not Found');
     }
 
-    return {
-      delete: true,
-    };
+    const result: UpdateResult = await this.productRepository.softDelete({
+      id: productID,
+    });
+    if (result.affected === 0) {
+      throw new BadRequestException(
+        `result row affect number: ${result.affected}`,
+      );
+    }
+    return product;
   }
 
   private async findProductByName(name: string): Promise<Product | null> {
