@@ -16,7 +16,7 @@ import { User } from '../user/domain/user.entity';
 import { PaymentService } from '../payment/payment.service';
 //import { Order } from './domain/order.entity';
 
-@ApiTags('orders')
+@ApiTags('Orders')
 @Controller('order')
 export class OrderController {
   constructor(
