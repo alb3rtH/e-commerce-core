@@ -64,7 +64,10 @@ export class AuthService {
       throw new UnauthorizedException('Email is not found');
     }
 
-    const isMatch: boolean = await this.bcrypCompare(password, user.password);
+    const isMatch: boolean = await this.compareHashPsswd(
+      password,
+      user.password,
+    );
     if (!isMatch) {
       throw new UnauthorizedException('Incorrect Password');
     }
@@ -90,7 +93,7 @@ export class AuthService {
    *   console.log('Valid password');
    * }
    */
-  private async bcrypCompare(password: string, hash: string) {
+  private async compareHashPsswd(password: string, hash: string) {
     return compare(password, hash);
   }
 
