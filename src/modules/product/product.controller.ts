@@ -16,7 +16,7 @@ import { UpdateProductDto } from './dto/update.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { RolesGuard } from 'src/common/roles/roles.guard';
 import { Roles } from 'src/common/roles/roles.decorator';
-import { UserRole } from '../user/domain/user.entity';
+import { User, UserRole } from '../user/domain/user.entity';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -114,7 +114,7 @@ export class ProductController {
    * Requires ADMIN role. Returns an empty array if no products exist.
    */
   @Get()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get a list of all Products',
@@ -139,7 +139,7 @@ export class ProductController {
    * Requires ADMIN role. The ID parameter is validated as a string identifier.
    */
   @Get(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get a Product with ID',

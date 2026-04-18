@@ -35,11 +35,9 @@ export class Product {
   stock: number;
 
   @CreateDateColumn()
-  @ApiProperty({ example: '2026-04-07T11:44:31.835Z' })
   createdAt: Date;
 
   @UpdateDateColumn()
-  @ApiProperty({ example: '2026-04-07T11:44:31.835Z' })
   updatedAt: Date;
 
   @DeleteDateColumn()

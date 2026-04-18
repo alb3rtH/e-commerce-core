@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { QueryFailedError, Repository, UpdateResult } from 'typeorm';
 import { Product } from './domain/product.entity';
@@ -49,7 +50,22 @@ export class ProductService {
 
   async findAllProduct(): Promise<Product[]> {
     try {
-      return this.productRepository.find();
+      const products = await this.productRepository.find({
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          sku: true,
+          description: true,
+          stock: true,
+        },
+      });
+
+      if (products.length > 0) {
+        return products;
+      } else {
+        throw new NotFoundException('products not found');
+      }
     } catch (error: unknown) {
       if (error instanceof QueryFailedError) {
         const driverError = error.driverError as { code?: string };
@@ -63,7 +79,17 @@ export class ProductService {
 
   async findOneProduct(productID: string): Promise<Product | null> {
     try {
-      return await this.productRepository.findOne({ where: { id: productID } });
+      return await this.productRepository.findOne({
+        where: { id: productID },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          sku: true,
+          description: true,
+          stock: true,
+        },
+      });
     } catch (error: unknown) {
       if (error instanceof QueryFailedError) {
         const driverError = error.driverError as { code?: string };
