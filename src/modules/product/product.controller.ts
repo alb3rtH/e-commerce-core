@@ -108,7 +108,9 @@ export class ProductController {
    *
    * @returns A promise resolving to an array of all product entities
    * @throws {UnauthorizedException} When the request lacks valid authentication
-   *
+   * @throws {NotFoundException} When there are no products in the database
+   * @throws {BadGatewayException} When exist a error in query petition
+   * @throws {InternalServerErrorException} When failed to fetch product
    * @remarks
    * Requires ADMIN or CUSTOMER role. Returns an empty array if no products exist.
    */
@@ -120,7 +122,7 @@ export class ProductController {
     description: 'Get a list of all product with the provided credentials.',
   })
   @ApiBearerAuth('access-token')
-  async getAll() {
+  async getAll(): Promise<Product[]> {
     return this.productService.findAllProduct();
   }
 
