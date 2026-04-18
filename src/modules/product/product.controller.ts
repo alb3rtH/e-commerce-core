@@ -16,7 +16,7 @@ import { UpdateProductDto } from './dto/update.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { RolesGuard } from 'src/common/roles/roles.guard';
 import { Roles } from 'src/common/roles/roles.decorator';
-import { User, UserRole } from '../user/domain/user.entity';
+import { UserRole } from '../user/domain/user.entity';
 import {
   ApiBearerAuth,
   ApiBody,
