@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../user/domain/user.entity';
@@ -41,8 +42,8 @@ export class AuthService {
    * @param {string} userPassword - Plain text password provided by the user
    * @returns {Promise<User | null>} Promise that resolves with the User object if credentials are valid,
    *                                 or null if the user is not found
-   * @throws {BadRequestException} If the email does not exist in the database
-   * @throws {BadRequestException} If the provided password does not match the stored hash
+   * @throws {UnauthorizedException} If the email does not exist in the database
+   * @throws {UnauthorizedException} If the provided password does not match the stored hash
    *
    * @example
    * const user = await authService.findUserByEmail('user@example.com', 'myPassword123');
@@ -52,35 +53,25 @@ export class AuthService {
    */
   async findUserByEmail(
     email: string,
-    userPassword: string,
-  ): Promise<User | null> {
-    // Verify if the email exists in the database
-    if (!(await this.authRepository.existsBy({ email: email }))) {
-      throw new BadRequestException('email not exist');
-    }
-
-    // Retrieve the stored password hash for the provided email
-    const hashPassword = await this.authRepository.findOne({
-      where: {
-        email: email,
-      },
-      select: ['password'],
+    password: string,
+  ): Promise<Omit<User, 'password'>> {
+    const user: User | null = await this.authRepository.findOne({
+      where: { email },
+      select: ['id', 'name', 'lastname', 'role', 'email', 'password'],
     });
 
-    // Compare the provided password with the stored hash
-    if (!(await this.bcrypCompare(userPassword, hashPassword!.password))) {
-      throw new BadRequestException('incorrect password');
+    if (!user) {
+      throw new UnauthorizedException('Email is not found');
     }
 
-    // Retrieve user information excluding the password for security
-    const user = await this.authRepository.findOne({
-      where: {
-        email: email,
-      },
-      select: ['id', 'name', 'lastname', 'role'],
-    });
+    const isMatch: boolean = await this.bcrypCompare(password, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Incorrect Password');
+    }
 
-    return user;
+    const { password: _, ...result } = user;
+
+    return result;
   }
 
   /**

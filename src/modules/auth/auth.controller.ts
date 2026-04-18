@@ -3,7 +3,6 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
-  InternalServerErrorException,
   Patch,
   Post,
   UseGuards,
@@ -15,6 +14,8 @@ import { JWTPayload } from 'jose';
 import { GetUser } from 'src/common/decorators/get-user/get-user.decorator';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JwtAuthGuard } from './jwt/jwt.guard';
+import { SigninResponse } from './dto/siginResponse.dto';
+import { User } from '../user/domain/user.entity';
 
 /**
  * Controller responsible for handling authentication-related HTTP requests.
@@ -50,7 +51,7 @@ export class AuthController {
    *
    * @param authDto - Data transfer object containing user credentials (email and password)
    * @returns An object containing the signed JWT access token
-   * @throws {InternalServerErrorException} When user authentication fails or user is not found
+   * @throws {UnauthorizedException} When user authentication fails (invalid credentials)
    *
    * @example
    * // Request body
@@ -60,24 +61,26 @@ export class AuthController {
    * }
    *
    * // Successful response (201 created)
+   *
    * {
-   *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+   *  "userID": "8237959a-0b33-4f90-816e-b3ecdd18e815",
+   *   "loginAt": "2026-04-18T08:18:00.804Z",
+   *  "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6Imp3dCJ9....
    * }
    */
   @Post('signin')
   @HttpCode(HttpStatus.CREATED)
-  async signin(@Body() authDto: AuthDto) {
-    const user = await this.authService.findUserByEmail(
+  async signin(@Body() authDto: AuthDto): Promise<SigninResponse> {
+    const user: Omit<User, 'password'> = await this.authService.findUserByEmail(
       authDto.email,
       authDto.password,
     );
-    if (!user) {
-      throw new InternalServerErrorException();
-    }
-    const token = await this.jwtService.signToken({ user: user });
+    const token = await this.jwtService.signToken(user);
 
     return {
-      token: token,
+      userID: user.id,
+      loginAt: new Date(),
+      jwt: token,
     };
   }
 
