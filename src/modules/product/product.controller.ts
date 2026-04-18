@@ -108,10 +108,9 @@ export class ProductController {
    *
    * @returns A promise resolving to an array of all product entities
    * @throws {UnauthorizedException} When the request lacks valid authentication
-   * @throws {ForbiddenException} When the authenticated user lacks ADMIN privileges
    *
    * @remarks
-   * Requires ADMIN role. Returns an empty array if no products exist.
+   * Requires ADMIN or CUSTOMER role. Returns an empty array if no products exist.
    */
   @Get()
   @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
