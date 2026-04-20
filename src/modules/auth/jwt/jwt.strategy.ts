@@ -13,8 +13,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(request: JwtPayload): UserPayload {
+  validate(payload: JwtPayload): UserPayload {
     //NOTE: logic business here... e.g userID, name, lastname
-    return request.user;
+    return payload.user;
   }
 }

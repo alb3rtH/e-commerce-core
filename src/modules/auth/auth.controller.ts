@@ -60,7 +60,7 @@ export class AuthController {
    *   "password": "securePassword123"
    * }
    *
-   * // Successful response (201 created)
+   * Successful response (201 created)
    *
    * {
    *  "userID": "8237959a-0b33-4f90-816e-b3ecdd18e815",
@@ -75,7 +75,7 @@ export class AuthController {
       authDto.email,
       authDto.password,
     );
-    const token = await this.jwtService.signToken(user);
+    const token = await this.jwtService.signToken({ user });
 
     return {
       userID: user.id,
