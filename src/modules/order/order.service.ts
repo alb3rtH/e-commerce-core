@@ -2,13 +2,15 @@ import {
   BadRequestException,
   HttpException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { Product } from '../product/domain/product.entity';
 import { Order, OrderItem, OrderStatus } from './domain/order.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 /**
  * Service responsible for managing purchase orders.
@@ -17,12 +19,20 @@ import { Order, OrderItem, OrderStatus } from './domain/order.entity';
  */
 @Injectable()
 export class OrderService {
+  private logger: Logger;
   /**
    * Creates an instance of the order service.
    * @param datasource - TypeORM data source for transaction management
    * @param orderRepository - TypeORM repository for order CRUD operations
    */
-  constructor(private readonly datasource: DataSource) {}
+  constructor(
+    private readonly datasource: DataSource,
+
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+  ) {
+    this.logger = new Logger(OrderService.name);
+  }
 
   /**
    * Creates a new purchase order for a user.
@@ -96,9 +106,8 @@ export class OrderService {
       return savedOrder;
     } catch (error: unknown) {
       await queryRunner.rollbackTransaction();
-      const logger = new Logger(OrderService.name, { timestamp: true });
       if (error instanceof HttpException) {
-        logger.error(error.message ?? error, error);
+        this.logger.error(error.message ?? error, error);
         throw error;
       }
     } finally {
@@ -179,13 +188,50 @@ export class OrderService {
       return updatedOrder;
     } catch (error: unknown) {
       await queryRunner.rollbackTransaction();
-      const logger = new Logger(OrderService.name, { timestamp: true });
       if (error instanceof HttpException) {
-        logger.error(error?.message ?? error, error);
+        this.logger.error(error?.message ?? error, error);
         throw error;
       }
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  async findOrdersByUserID(userID: string): Promise<Order[]> {
+    try {
+      const orders = await this.orderRepository.find({
+        where: { user: { id: userID } },
+      });
+
+      return orders;
+    } catch (error: unknown) {
+      if (error instanceof QueryFailedError) {
+        const driverError = error.driverError as { code?: string };
+        this.logger.error(error);
+        throw new BadRequestException(driverError.code || 'Database Error');
+      }
+
+      this.logger.error(error);
+      throw new InternalServerErrorException('Failed to find order');
+    }
+  }
+
+  async findOrderByID(orderID: string): Promise<Order | null> {
+    try {
+      const order = await this.orderRepository.findOne({
+        where: { id: orderID },
+      });
+
+      return order;
+    } catch (error: unknown) {
+      if (error instanceof QueryFailedError) {
+        const driverError = error.driverError as { code?: string };
+        this.logger.error(error);
+        throw new BadRequestException(driverError.code || 'Database Error');
+      }
+
+      this.logger.error(error);
+      throw new InternalServerErrorException('Failed to find order');
     }
   }
 }
