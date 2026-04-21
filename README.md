@@ -7,13 +7,14 @@
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
 
 ### Stack Icons
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" height="40" alt="typescript logo" />
- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" height="40" alt="nodejs logo"  />
- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nestjs/nestjs-original.svg" height="40" alt="nestjs logo"  />
-<img src="https://skillicons.dev/icons?i=docker" height="40" alt="docker logo"   />
-<img src="https://skillicons.dev/icons?i=postgres" height="40" alt="postgresql logo"/><img width="12" />
-<img src="https://skillicons.dev/icons?i=pnpm" height="40" alt="pnpm logo"/><img width="12" />
-
+<div aling="left">
+    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" height="40" alt="typescript logo" />
+    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" height="40" alt="nodejs logo"  />
+    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nestjs/nestjs-original.svg" height="40" alt="nestjs logo"  />
+    <img src="https://skillicons.dev/icons?i=docker" height="40" alt="docker logo"   />
+    <img src="https://skillicons.dev/icons?i=postgres" height="40" alt="postgresql logo"/><img width="12" />
+    <img src="https://skillicons.dev/icons?i=pnpm" height="40" alt="pnpm logo"/><img width="12" />
+</div>
 ## 🚀 Project Setup
 ```bash
 # clone the repository
