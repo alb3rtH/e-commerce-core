@@ -15,6 +15,7 @@
     <img src="https://skillicons.dev/icons?i=postgres" height="40" alt="postgresql logo"/><img width="12" />
     <img src="https://skillicons.dev/icons?i=pnpm" height="40" alt="pnpm logo"/><img width="12" />
 </div>
+
 ## 🚀 Project Setup
 ```bash
 # clone the repository
