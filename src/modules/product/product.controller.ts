@@ -99,7 +99,7 @@ export class ProductController {
     type: CreateProductDto,
   })
   @ApiBearerAuth('access-token')
-  async save(@Body() createProductdto: CreateProductDto) {
+  async save(@Body() createProductdto: CreateProductDto): Promise<Product> {
     return await this.productService.createProduct(createProductdto);
   }
 

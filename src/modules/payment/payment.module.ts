@@ -10,4 +10,4 @@ import { OrdersModule } from '../order/order.module';
   controllers: [PaymentController],
   exports: [PaymentService],
 })
-export class PaymentModule { }
+export class PaymentModule {}

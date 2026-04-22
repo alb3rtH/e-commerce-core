@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpException,
   HttpStatus,
@@ -209,13 +210,22 @@ export class OrderController {
       },
     },
   })
-  async getOrderByID(@Query('orderID') productID: string): Promise<Order> {
-    const order = await this.orderService.findOrderByID(productID);
+  async getOrderByID(
+    @Query('orderID') orderID: string,
+    @GetUser() user: User,
+  ): Promise<Order> {
+    const order = await this.orderService.findOrderByID(orderID);
+    console.log(order);
 
     if (!order) {
       throw new NotFoundException('Order not found');
+    } else if (
+      order.user.id === user.id ||
+      (user.role as string) === (UserRole.ADMIN as string)
+    ) {
+      return order;
+    } else {
+      throw new ForbiddenException("You're not the owner or admin ");
     }
-
-    return order;
   }
 }

@@ -220,6 +220,14 @@ export class OrderService {
     try {
       const order = await this.orderRepository.findOne({
         where: { id: orderID },
+        relations: ['user'],
+        select: {
+          id: true,
+          items: true,
+          status: true,
+          totalAmount: true,
+          user: true,
+        },
       });
 
       return order;
