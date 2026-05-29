@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 
 const PORT_APP = process.env.PORT || 3000;
 
@@ -18,6 +19,8 @@ const PORT_APP = process.env.PORT || 3000;
         transform: true,
       }),
     );
+
+    app.use(cookieParser());
 
     const docConfig = new DocumentBuilder()
       .addBearerAuth(

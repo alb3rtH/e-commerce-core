@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Patch,
   Post,
+  Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -18,6 +19,8 @@ import { User } from '../user/domain/user.entity';
 import { TokenService } from './jwt/token.service';
 import { SigninResponse } from './dto/siginResponse.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import type { Response } from 'express';
+import { Cookies } from 'src/common/decorators/set-cookies/cookies.decorator';
 
 /**
  * Controller responsible for handling authentication-related HTTP requests.
@@ -72,7 +75,10 @@ export class AuthController {
    */
   @Post('signin')
   @HttpCode(HttpStatus.CREATED)
-  async signin(@Body() authDto: AuthDto): Promise<SigninResponse> {
+  async signin(
+    @Body() authDto: AuthDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<SigninResponse> {
     const user: Omit<User, 'password'> = await this.authService.findUserByEmail(
       authDto.email,
       authDto.password,
@@ -88,32 +94,58 @@ export class AuthController {
       },
     );
 
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: false, // just to dev
+      sameSite: 'strict',
+      path: 'api/v1/auth',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     return {
       userID: user.id,
       loginAt: new Date(),
       accessToken,
-      refreshToken,
     };
   }
 
-  //TODO: Repara el error de el rotate token
   @Post('refresh')
   @HttpCode(HttpStatus.CREATED)
-  async refresh(@Body() refreshDTO: RefreshDto) {
-    const { refreshToken } = refreshDTO;
+  async refresh(
+    @Cookies('refreshToken') refreshToken: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    if (!refreshToken) throw new UnauthorizedException('No refresh token');
 
     const payload = await this.tokenService.verifyToken(refreshToken);
     if (!payload) throw new UnauthorizedException('Invalid refresh token');
+
     const userId = payload.sub as string;
     const user = await this.authService.findOneUser(userId);
     if (!user) throw new NotFoundException('User not found');
+
     const userPayload = {
       id: user.id,
       name: user.name,
       lastname: user.lastname,
       role: user.role,
     };
-    return await this.tokenService.rotate(refreshToken, userId, userPayload);
+
+    const newTokens = await this.tokenService.rotate(
+      refreshToken,
+      userId,
+      userPayload,
+    );
+
+    res.cookie('refreshToken', newTokens.refreshToken, {
+      httpOnly: true,
+      secure: false, // just to dev
+      sameSite: 'strict',
+      path: 'api/v1/auth',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return { accessToken: newTokens.accessToken };
   }
 
   //TODO: ¿Por qué no se incluye el updatedAt cuando cambió el password?
