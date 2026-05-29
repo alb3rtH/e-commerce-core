@@ -3,7 +3,6 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
-  NotFoundException,
 } from '@nestjs/common';
 import { QueryFailedError, Repository, UpdateResult } from 'typeorm';
 import { Product } from './domain/product.entity';
@@ -64,7 +63,7 @@ export class ProductService {
       if (products.length > 0) {
         return products;
       } else {
-        throw new NotFoundException('products not found');
+        throw new Error('products not found');
       }
     } catch (error: unknown) {
       if (error instanceof QueryFailedError) {

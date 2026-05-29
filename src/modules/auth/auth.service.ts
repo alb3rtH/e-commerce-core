@@ -138,7 +138,7 @@ export class AuthService {
     }
   }
 
-  private async findOneUser(userId: string) {
+  async findOneUser(userId: string) {
     try {
       return await this.authRepository.findOne({
         where: { id: userId },

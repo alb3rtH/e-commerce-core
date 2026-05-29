@@ -3,19 +3,21 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Patch,
   Post,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { AuthDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
-import { JwtService } from './jwt/jwt.service';
-import { JWTPayload } from 'jose';
 import { GetUser } from 'src/common/decorators/get-user/get-user.decorator';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JwtAuthGuard } from './jwt/jwt.guard';
-import { SigninResponse } from './dto/siginResponse.dto';
 import { User } from '../user/domain/user.entity';
+import { TokenService } from './jwt/token.service';
+import { SigninResponse } from './dto/siginResponse.dto';
+import { RefreshDto } from './dto/refresh.dto';
 
 /**
  * Controller responsible for handling authentication-related HTTP requests.
@@ -39,7 +41,7 @@ export class AuthController {
    */
   constructor(
     private readonly authService: AuthService,
-    private readonly jwtService: JwtService<JWTPayload>,
+    private readonly tokenService: TokenService,
   ) {}
 
   /**
@@ -75,13 +77,43 @@ export class AuthController {
       authDto.email,
       authDto.password,
     );
-    const token = await this.jwtService.signToken({ user });
+
+    const { accessToken, refreshToken } = await this.tokenService.generatePair(
+      user.id,
+      {
+        id: user.id,
+        name: user.name,
+        lastname: user.lastname,
+        role: user.role,
+      },
+    );
 
     return {
       userID: user.id,
       loginAt: new Date(),
-      jwt: token,
+      accessToken,
+      refreshToken,
     };
+  }
+
+  //TODO: Repara el error de el rotate token
+  @Post('refresh')
+  @HttpCode(HttpStatus.CREATED)
+  async refresh(@Body() refreshDTO: RefreshDto) {
+    const { refreshToken } = refreshDTO;
+
+    const payload = await this.tokenService.verifyToken(refreshToken);
+    if (!payload) throw new UnauthorizedException('Invalid refresh token');
+    const userId = payload.sub as string;
+    const user = await this.authService.findOneUser(userId);
+    if (!user) throw new NotFoundException('User not found');
+    const userPayload = {
+      id: user.id,
+      name: user.name,
+      lastname: user.lastname,
+      role: user.role,
+    };
+    return await this.tokenService.rotate(refreshToken, userId, userPayload);
   }
 
   //TODO: ¿Por qué no se incluye el updatedAt cuando cambió el password?
