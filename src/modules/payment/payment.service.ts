@@ -37,12 +37,16 @@ export class PaymentService {
 
     if (!stripeKey) {
       this.logger.error('STRIPE_SECRET_KEY is missing');
-      throw new Error('STRIPE_SECRET_KEY environment variable is required');
+      throw new InternalServerErrorException(
+        'STRIPE_SECRET_KEY environment variable is required',
+      );
     }
 
     if (!stripeWebhook) {
       this.logger.error('STRIPE_SECRET_WEBHOOK is missing');
-      throw new Error('STRIPE_SECRET_WEBHOOK environment variable is required');
+      throw new InternalServerErrorException(
+        'STRIPE_SECRET_WEBHOOK environment variable is required',
+      );
     }
 
     this.stripe = new Stripe(stripeKey, { apiVersion: '2026-02-25.clover' });
