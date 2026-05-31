@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from './jwt.service';
 import { JWTPayload, jwtVerify } from 'jose';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -75,17 +75,17 @@ export class TokenService {
     });
 
     if (!stored) {
-      throw new Error('Refresh token not found');
+      throw new UnauthorizedException('Refresh token not found');
     }
 
     const isValid = await compare(oldRefreshToken, stored.hashedToken);
 
     if (!isValid) {
-      throw new Error('Invalid refresh token');
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     if (new Date() > stored.expiresAt) {
-      throw new Error('Refresh token expired');
+      throw new UnauthorizedException('Refresh token expired');
     }
 
     const family = stored.family;
