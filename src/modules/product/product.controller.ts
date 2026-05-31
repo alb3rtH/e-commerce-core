@@ -122,7 +122,7 @@ export class ProductController {
     description: 'Get a list of all product with the provided credentials.',
   })
   @ApiBearerAuth('access-token')
-  async getAll(): Promise<Product[]> {
+  async getAll(): Promise<Product[] | undefined> {
     return this.productService.findAllProduct();
   }
 
