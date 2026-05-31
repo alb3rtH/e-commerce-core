@@ -3,9 +3,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
-  HttpException,
   HttpStatus,
-  InternalServerErrorException,
   NotFoundException,
   Post,
   Query,
@@ -85,25 +83,16 @@ export class OrderController {
   })
   async create(@Body() createOrderdto: CreateOrderDto, @GetUser() user: User) {
     //1. create the order in the database (Status: PENDING)
-    try {
-      //2. generate the Stripe session immediately
-      const order = await this.orderService.createOrder(
-        user.id,
-        createOrderdto,
-      );
 
-      if (order) {
-        const session = await this.paymentService.createCheckoutSession(order);
-        return {
-          orderID: order.id,
-          checkoutUrl: session.url,
-        };
-      }
-    } catch (error: unknown) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to create order');
+    //2. generate the Stripe session immediately
+    const order = await this.orderService.createOrder(user.id, createOrderdto);
+
+    if (order) {
+      const session = await this.paymentService.createCheckoutSession(order);
+      return {
+        orderID: order.id,
+        checkoutUrl: session.url,
+      };
     }
   }
 
