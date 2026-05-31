@@ -18,7 +18,6 @@ import { JwtAuthGuard } from './jwt/jwt.guard';
 import { User } from '../user/domain/user.entity';
 import { TokenService } from './jwt/token.service';
 import { SigninResponse } from './dto/siginResponse.dto';
-import { RefreshDto } from './dto/refresh.dto';
 import type { Response } from 'express';
 import { Cookies } from 'src/common/decorators/set-cookies/cookies.decorator';
 
