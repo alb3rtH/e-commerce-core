@@ -152,8 +152,11 @@ export class PaymentService {
         this.stripeSecretKey,
       );
     } catch (error) {
-      this.logger.error('Stripe webhook signature verification failed', error);
-      throw error;
+      this.logger.error(
+        'Stripe webhook signature verification failed: ',
+        error,
+      );
+      throw new BadRequestException('Invalid Stripe Signature');
     }
   }
 }

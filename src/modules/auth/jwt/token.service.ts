@@ -1,4 +1,9 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from './jwt.service';
 import { JWTPayload, jwtVerify } from 'jose';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,7 +21,7 @@ export class TokenService {
     private readonly refreshTokenService: JwtService<JWTPayload>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepo: Repository<RefreshToken>,
-  ) { }
+  ) {}
 
   async generatePair(userId: string, userPayload: Record<string, unknown>) {
     const family = randomUUID();
@@ -57,8 +62,9 @@ export class TokenService {
       return payload;
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error(error);
-        throw error;
+        throw new UnauthorizedException(error);
+      } else {
+        throw new InternalServerErrorException(error);
       }
     }
   }

@@ -31,6 +31,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         typeof response === 'string'
           ? response
           : (response as any).message || message;
+
+      if (httpStatus >= 500) {
+        this.logger.error(`HttpException: ${httpStatus} - ${message}`);
+      } else {
+        this.logger.warn(`HttpException: ${httpStatus} - ${message}`);
+      }
     } else if (exception instanceof QueryFailedError) {
       const mapped = this.mapQueryFailedError(exception);
       httpStatus = mapped.status;
