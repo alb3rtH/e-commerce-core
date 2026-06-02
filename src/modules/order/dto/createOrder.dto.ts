@@ -34,9 +34,9 @@ export class CreateOrderDto {
     type: [CreateOrderItemDto],
     minItems: 1,
     example: [
-      { producID: '6c5ee411-8f15-4c4b-8513-e299b00e597a', quantity: 2 },
-      { producID: '5f85436b-a731-463b-b8cf-ac7ed122fb74', quantity: 1 },
-      { producID: 'd202536f-4d68-4b3f-a378-b4706d9273ee', quantity: 1 },
+      { productID: '6c5ee411-8f15-4c4b-8513-e299b00e597a', quantity: 2 },
+      { productID: '5f85436b-a731-463b-b8cf-ac7ed122fb74', quantity: 1 },
+      { productID: 'd202536f-4d68-4b3f-a378-b4706d9273ee', quantity: 1 },
     ],
   })
   @IsArray()
