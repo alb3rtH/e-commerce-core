@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from './jwt.service';
@@ -14,6 +15,8 @@ import { compare, hash } from 'bcrypt';
 
 @Injectable()
 export class TokenService {
+  private readonly logger = new Logger(TokenService.name);
+
   constructor(
     @Inject('ACCESS_TOKEN_SERVICE')
     private readonly accessTokenService: JwtService<JWTPayload>,
@@ -62,9 +65,9 @@ export class TokenService {
       return payload;
     } catch (error: unknown) {
       if (error instanceof Error) {
-        throw new UnauthorizedException(error);
+        throw new UnauthorizedException('Invalid or expired token');
       } else {
-        throw new InternalServerErrorException(error);
+        throw new InternalServerErrorException('Token verification failed');
       }
     }
   }
