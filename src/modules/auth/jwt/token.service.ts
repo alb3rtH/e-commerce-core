@@ -16,7 +16,7 @@ export class TokenService {
     private readonly refreshTokenService: JwtService<JWTPayload>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepo: Repository<RefreshToken>,
-  ) {}
+  ) { }
 
   async generatePair(userId: string, userPayload: Record<string, unknown>) {
     const family = randomUUID();
@@ -49,7 +49,6 @@ export class TokenService {
   }
 
   async verifyToken(token: string) {
-    console.log(process.env.JWT_REFRESH_SECRET);
     try {
       const secret = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET);
       const { payload } = await jwtVerify(token, secret, {
