@@ -3,10 +3,12 @@
 import {
   CallHandler,
   ExecutionContext,
+  HttpException,
   Injectable,
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { Observable, tap } from 'rxjs';
 
 @Injectable()
@@ -21,10 +23,18 @@ export class LoggingInterceptor implements NestInterceptor {
     const { method, url } = request;
 
     return next.handle().pipe(
-      tap(() => {
-        const response = context.switchToHttp().getResponse();
-        const statusCode = response.statusCode;
-        this.logger.log(`${method} ${url} ${statusCode} ${Date.now()}ms`);
+      tap({
+        next: () => {
+          const response = context.switchToHttp().getResponse<Response>();
+          this.logger.log(`${method} ${url} ${response.statusCode}`);
+        },
+        error: (error: Error) => {
+          const statusCode =
+            error instanceof HttpException ? error.getStatus() : 500;
+          this.logger.error(
+            `${method} ${url} ${statusCode} - ${error.message}`,
+          );
+        },
       }),
     );
   }
