@@ -3,7 +3,6 @@ import {
   Controller,
   Headers,
   HttpCode,
-  InternalServerErrorException,
   Logger,
   Post,
   RawBodyRequest,
@@ -119,14 +118,10 @@ export class PaymentController {
       throw new BadRequestException('Stripe signature is required');
     }
 
-    let event: Stripe.Event;
-
-    try {
-      event = this.paymentsService.constructEvent(req.rawBody!, signature);
-    } catch (error) {
-      this.logger.error('Stripe webhook verification failed', error);
-      throw new BadRequestException('Invalid Stripe webhook signature');
-    }
+    const event: Stripe.Event = this.paymentsService.constructEvent(
+      req.rawBody!,
+      signature,
+    );
 
     if (event.type !== 'checkout.session.completed') {
       this.logger.log(`Ignored Stripe event ${event.type}`);
@@ -141,18 +136,8 @@ export class PaymentController {
       throw new BadRequestException('orderId is required in session metadata');
     }
 
-    try {
-      await this.orderService.markAsPaidUpdateStock(orderId);
-      this.logger.log(`Order marked as paid: ${orderId}`);
-    } catch (error) {
-      this.logger.error(
-        `Error processing order ${orderId} from Stripe webhook`,
-        error,
-      );
-      throw new InternalServerErrorException(
-        'Unable to process webhook at this time',
-      );
-    }
+    await this.orderService.markAsPaidUpdateStock(orderId);
+    this.logger.log(`Order marked as paid: ${orderId}`);
 
     return { received: true };
   }
