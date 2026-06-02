@@ -204,7 +204,6 @@ export class OrderController {
     @GetUser() user: User,
   ): Promise<Order> {
     const order = await this.orderService.findOrderByID(orderID);
-    console.log(order);
 
     if (!order) {
       throw new NotFoundException('Order not found');

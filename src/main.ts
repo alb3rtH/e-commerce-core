@@ -45,5 +45,5 @@ const PORT_APP = process.env.PORT || 3000;
 
     new Logger().debug(`the is listen in http://localhost:${PORT_APP}`);
   }
-  bootstrap().catch((err) => console.log(err));
+  bootstrap().catch((err) => new Logger().error(err));
 })();
