@@ -1,14 +1,9 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './domain/user.entity';
-import { QueryFailedError, Repository } from 'typeorm';
 import { CreateUserDto } from './dtos/user.dto';
 import { hash } from 'bcrypt';
+import { Repository } from 'typeorm';
 
 /**
  * Service responsible for managing user-related operations.
@@ -25,9 +20,7 @@ export class UserService {
    * Used to log errors and debugging information throughout the service.
    *
    * @private
-   * @type {Logger}
    */
-  private logger: Logger;
 
   /**
    * Creates an instance of UserService.
@@ -39,9 +32,7 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) {
-    this.logger = new Logger(UserService.name);
-  }
+  ) {}
 
   /**
    * Creates and persists a new user in the database.
@@ -70,18 +61,10 @@ export class UserService {
     createUserDto.password = await hash(createUserDto.password, 10);
     const user = this.userRepository.create(createUserDto);
 
-    try {
-      const savedUser = await this.userRepository.save(user);
-      const { password, ...userWithoutPassword } = savedUser;
-      return userWithoutPassword;
-    } catch (error: unknown) {
-      if (error instanceof QueryFailedError) {
-        const driverError = error.driverError as { code?: string };
-        throw new BadRequestException(driverError.code || 'Database Error');
-      }
-      this.logger.error(error);
-      throw new InternalServerErrorException('Failed to create user');
-    }
+    const savedUser = await this.userRepository.save(user);
+    const { password, ...userWithoutPassword } = savedUser;
+
+    return userWithoutPassword;
   }
 
   /**
@@ -97,20 +80,9 @@ export class UserService {
    * const user = await userService.findOneUser('123e4567-e89b-12d3-a456-426614174000');
    */
   async findOneUser(userId: string): Promise<User | null> {
-    try {
-      return await this.userRepository.findOne({
-        where: { id: userId },
-      });
-    } catch (error: unknown) {
-      if (error instanceof QueryFailedError) {
-        const driverError = error.driverError as { code?: string };
-        this.logger.error(error);
-        throw new BadRequestException(driverError.code || 'Database Error');
-      }
-
-      this.logger.error(error);
-      throw new InternalServerErrorException('Failed to find user');
-    }
+    return await this.userRepository.findOne({
+      where: { id: userId },
+    });
   }
 
   /**
@@ -125,18 +97,7 @@ export class UserService {
    * const allUsers = await userService.findAllUsers();
    */
   async findAllUsers(): Promise<User[]> {
-    try {
-      return this.userRepository.find();
-    } catch (error: unknown) {
-      if (error instanceof QueryFailedError) {
-        const driverError = error.driverError as { code?: string };
-        this.logger.error(error);
-        throw new BadRequestException(driverError.code || 'Database Error');
-      }
-
-      this.logger.error(error);
-      throw new InternalServerErrorException('Failed to find user');
-    }
+    return this.userRepository.find();
   }
 
   /**

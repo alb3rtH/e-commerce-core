@@ -1,12 +1,10 @@
 import {
   BadRequestException,
-  HttpException,
   Injectable,
-  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { Product } from '../product/domain/product.entity';
 import { Order, OrderItem, OrderStatus } from './domain/order.entity';
@@ -106,10 +104,7 @@ export class OrderService {
       return savedOrder;
     } catch (error: unknown) {
       await queryRunner.rollbackTransaction();
-      if (error instanceof HttpException) {
-        this.logger.error(error.message ?? error, error);
-        throw error;
-      }
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -188,58 +183,33 @@ export class OrderService {
       return updatedOrder;
     } catch (error: unknown) {
       await queryRunner.rollbackTransaction();
-      if (error instanceof HttpException) {
-        this.logger.error(error?.message ?? error, error);
-        throw error;
-      }
+      throw error;
     } finally {
       await queryRunner.release();
     }
   }
 
   async findOrdersByUserID(userID: string): Promise<Order[]> {
-    try {
-      const orders = await this.orderRepository.find({
-        where: { user: { id: userID } },
-      });
+    const orders = await this.orderRepository.find({
+      where: { user: { id: userID } },
+    });
 
-      return orders;
-    } catch (error: unknown) {
-      if (error instanceof QueryFailedError) {
-        const driverError = error.driverError as { code?: string };
-        this.logger.error(error);
-        throw new BadRequestException(driverError.code || 'Database Error');
-      }
-
-      this.logger.error(error);
-      throw new InternalServerErrorException('Failed to find order');
-    }
+    return orders;
   }
 
   async findOrderByID(orderID: string): Promise<Order | null> {
-    try {
-      const order = await this.orderRepository.findOne({
-        where: { id: orderID },
-        relations: ['user'],
-        select: {
-          id: true,
-          items: true,
-          status: true,
-          totalAmount: true,
-          user: true,
-        },
-      });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderID },
+      relations: ['user'],
+      select: {
+        id: true,
+        items: true,
+        status: true,
+        totalAmount: true,
+        user: true,
+      },
+    });
 
-      return order;
-    } catch (error: unknown) {
-      if (error instanceof QueryFailedError) {
-        const driverError = error.driverError as { code?: string };
-        this.logger.error(error);
-        throw new BadRequestException(driverError.code || 'Database Error');
-      }
-
-      this.logger.error(error);
-      throw new InternalServerErrorException('Failed to find order');
-    }
+    return order;
   }
 }

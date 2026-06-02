@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../user/domain/user.entity';
-import { QueryFailedError, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { compare, hash } from 'bcrypt';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 
@@ -20,7 +20,7 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
  */
 @Injectable()
 export class AuthService {
-  private logger: Logger;
+  private logger = new Logger(AuthService.name);
   constructor(
     /**
      * TypeORM repository for database operations with the User entity.
@@ -29,9 +29,7 @@ export class AuthService {
      */
     @InjectRepository(User)
     private authRepository: Repository<User>,
-  ) {
-    this.logger = new Logger(AuthService.name);
-  }
+  ) {}
 
   /**
    * Finds a user by their email address and validates the provided password.
@@ -115,6 +113,7 @@ export class AuthService {
       updatePasswordDto.currentPassword,
       user.password,
     );
+
     if (!isPasswordValid) {
       throw new BadRequestException('Current password is incorrect');
     }
@@ -129,29 +128,14 @@ export class AuthService {
         return updatedUser;
       }
     } catch (error: unknown) {
-      if (error instanceof QueryFailedError) {
-        const driverError = error.driverError as { code?: string };
-        throw new BadRequestException(driverError.code || 'Database Error');
-      }
       this.logger.error(error);
       throw new InternalServerErrorException('Failed to update password');
     }
   }
 
   async findOneUser(userId: string) {
-    try {
-      return await this.authRepository.findOne({
-        where: { id: userId },
-      });
-    } catch (error: unknown) {
-      if (error instanceof QueryFailedError) {
-        const driverError = error.driverError as { code?: string };
-        this.logger.error(error);
-        throw new BadRequestException(driverError.code || 'Database Error');
-      }
-
-      this.logger.error(error);
-      throw new InternalServerErrorException('Failed to find user');
-    }
+    return await this.authRepository.findOne({
+      where: { id: userId },
+    });
   }
 }

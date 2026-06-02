@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { importPKCS8, JWTPayload, SignJWT } from 'jose';
 
 // Standard RFC 7519 claims (controlled by the library, not the user)
@@ -128,14 +128,18 @@ export class JwtService<TCustom extends Record<string, unknown>> {
   private async resolveKey(): Promise<Uint8Array | CryptoKey> {
     if (this.config.algorithm?.startsWith('HS')) {
       if (!this.config.secret)
-        throw new Error('Secret key is required for HMAC');
+        throw new InternalServerErrorException(
+          'Secret key is required for HMAC',
+        );
       return typeof this.config.secret == 'string'
         ? new TextEncoder().encode(this.config.secret)
         : this.config.secret;
     }
 
     if (!this.config.privateKey)
-      throw new Error('private key are required for asymmetric algorithms');
+      throw new InternalServerErrorException(
+        'private key are required for asymmetric algorithms',
+      );
 
     return importPKCS8(this.config.privateKey, this.config.algorithm!);
   }

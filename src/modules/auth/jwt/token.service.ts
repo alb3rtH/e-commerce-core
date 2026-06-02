@@ -1,4 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from './jwt.service';
 import { JWTPayload, jwtVerify } from 'jose';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -49,7 +54,6 @@ export class TokenService {
   }
 
   async verifyToken(token: string) {
-    console.log(process.env.JWT_REFRESH_SECRET);
     try {
       const secret = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET);
       const { payload } = await jwtVerify(token, secret, {
@@ -58,8 +62,9 @@ export class TokenService {
       return payload;
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error(error);
-        throw error;
+        throw new UnauthorizedException(error);
+      } else {
+        throw new InternalServerErrorException(error);
       }
     }
   }
@@ -75,17 +80,17 @@ export class TokenService {
     });
 
     if (!stored) {
-      throw new Error('Refresh token not found');
+      throw new UnauthorizedException('Refresh token not found');
     }
 
     const isValid = await compare(oldRefreshToken, stored.hashedToken);
 
     if (!isValid) {
-      throw new Error('Invalid refresh token');
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     if (new Date() > stored.expiresAt) {
-      throw new Error('Refresh token expired');
+      throw new UnauthorizedException('Refresh token expired');
     }
 
     const family = stored.family;
