@@ -102,14 +102,17 @@ export class PaymentService {
     });
 
     try {
-      const session = await this.stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: lineItems,
-        mode: 'payment',
-        success_url: this.successUrl,
-        cancel_url: this.cancelUrl,
-        metadata: { orderId: order.id },
-      });
+      const session = await this.stripe.checkout.sessions.create(
+        {
+          payment_method_types: ['card'],
+          line_items: lineItems,
+          mode: 'payment',
+          success_url: this.successUrl,
+          cancel_url: this.cancelUrl,
+          metadata: { orderId: order.id },
+        },
+        { idempotencyKey: `checkout-${order.id}-${Date.now()}` },
+      );
 
       if (!session.url) {
         this.logger.error('Stripe session created without URL');
